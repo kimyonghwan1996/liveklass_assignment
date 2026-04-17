@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: event-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: event_logs
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  airflow:
+    image: apache/airflow:2.8.3-python3.11
+    container_name: event-airflow
+    depends_on:
+      - db
+    environment:
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _PIP_ADDITIONAL_REQUIREMENTS=pandas matplotlib seaborn psycopg2-binary
+      # Environment variables for our custom pipeline
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=event_logs
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./output:/opt/airflow/output
+    ports:
+      - "8080:8080"
+    command: standalone
+
+volumes:
+  db_data:
