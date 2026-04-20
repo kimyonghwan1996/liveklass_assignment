@@ -26,6 +26,7 @@ services:
       - DB_NAME=event_logs
     volumes:
       - ./output:/app/output
+      - ./data/raw:/app/data/raw
 
 volumes:
   db_data:
