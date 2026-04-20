@@ -32,19 +32,19 @@ docker compose up --build
 
 이 프로젝트의 데이터 흐름은 크게 3가지 레이어로 나뉩니다:
 
-### 1. 📂 Raw 레이어 (로컬 JSONL 덤프)
+### 1. Raw 레이어 (로컬 JSONL 덤프)
 이벤트를 생성하는 `Mock Generator`는 파이썬 딕셔너리로 데이터를 짜낸 다음, 즉시 DB로 쏘지 않고 호스트 로컬 컴퓨터 저장소에 JSONL 형식으로 먼저 씁니다.
 - `data/raw/users_{YYYYMMDDHHMMSS}.jsonl`: 사용자 상태 업데이트 내역
 - `data/raw/events_{YYYYMMDDHHMMSS}.jsonl`: 트래픽 이벤트 행동 내역
 
 *(Docker 볼륨을 통해 로컬의 `./data/raw` 경로에서도 직접 백업된 원시 파일들을 확인할 수 있습니다.)*
 
-### 2. 🗄️ Staging 레이어 (PostgreSQL Load)
+### 2. Staging 레이어 (PostgreSQL Load)
 Raw 파일들이 생성되면, 파이썬 스크립트가 로컬 파일을 스캔하여 데이터베이스의 준비 테이블(Staging Table)에 통렬하게 로드(Load)합니다.
 - `stg_users_raw`
 - `stg_events_raw`
 
-### 3. 🧩 Marts 레이어 (Transform)
+### 3. Marts 레이어 (Transform)
 Staging 테이블에 적재된 원시 데이터를 활용하여 DW 분석 목적용 테이블(Dim/Fact)로 가공(Join & Merge)합니다.
 
 #### 차원 테이블 (Dimension): `dim_user`
@@ -61,7 +61,7 @@ Staging 테이블에 적재된 원시 데이터를 활용하여 DW 분석 목적
 
 ---
 
-## ☁️ AWS 아키텍처 설계 (AWS Migration Plan)
+## AWS 아키텍처 설계 (AWS Migration Plan)
 
 이 과제의 로컬 ELT 파이프라인(이벤트 생성 → 저장 → 가공 → 시각화)을 실제 대규모 운영이 가능한 AWS 클라우드 아키텍처로 이관한다면 다음과 같은 구성으로 설계할 수 있습니다.
 
@@ -92,7 +92,7 @@ flowchart TD
     classDef viz fill:#6a1b9a,stroke:#4a148c,stroke-width:2px,color:#fff
 ```
 
-### 🛠️ 사용할 AWS 서비스 및 선택 이유
+### 사용할 AWS 서비스 및 선택 이유
 
 1. **Amazon EventBridge**: 로컬 파이프라인의 `while True / time.sleep(600)` 역할을 담당. 10분마다 이벤트 생성 트리거를 정확하고 안정적으로 호출하기 위해 사용합니다.
 2. **Amazon ECS (AWS Fargate) 또는 AWS Lambda**: 파이썬 `main.py`의 데이터 생성(Mocking) 및 가공 스크립트를 실행하는 컴퓨팅 서비스. 배치 작업이 길어지면 Fargate, 짧다면 Lambda를 선택하여 서버를 직접 관리할 필요 없이(Serverless) 코드를 구동합니다.
@@ -100,7 +100,7 @@ flowchart TD
 4. **Amazon RDS for PostgreSQL (또는 Redshift)**: 현재의 `event-db` (PostgreSQL) 컨테이너의 역할. 데이터가 기가바이트 급이라면 RDS로 충분하며, 테라바이트 이상의 대형 데이터 웨어하우징(Marts) 연산이 들어가면 Redshift를 도입하여 성능을 극대화할 수 있습니다.
 5. **Amazon QuickSight**: 로컬 파이썬이 `dashboard.png`로 저장하던 시각화 단계를 완전히 대체합니다. 쿼리 결과를 자동으로 연동받아 비즈니스 대시보드로 실시간 시각화해 상시 모니터링 체계를 갖춥니다.
 
-### 📝 AWS 서비스의 역할 차이 (나만의 언어로 설명)
+### AWS 서비스의 역할 차이 (나만의 언어로 설명)
 
 * **Amazon S3 (거대한 무한 창고)**: 
   S3는 데이터의 형태나 구조를 따지지 않고 "있는 그대로" 던져놓을 수 있는 아주 싸고 넓은 창고입니다. 파이프라인의 극초반부에서 날 것(Raw)의 이벤트를 잃어버리지 않게 비닐봉지(JSONL)에 싸서 적재해두는 역할을 합니다. 언제든 다시 꺼내 쓸 수 있는 가장 원천적인 보험 데이터 기지입니다.
@@ -109,7 +109,7 @@ flowchart TD
 * **Amazon ECS / QuickSight (지게차 로봇과 뷰티풀 도화지)**:
   ECS는 창고와 서랍장을 오가며 짐을 나르고 조립하는 똑똑한 지게차 로봇(컴퓨팅) 역할을 하며, QuickSight는 서랍장에서 엑셀 표 같은 데이터를 꺼내 대표님이 보기 편한 럭셔리한 그림 한 장으로 뚝딱 그려 보여주는 브리핑 도화지 역할을 합니다.
 
-### 🤔 설계한 아키텍처에서 가장 고민한 부분
+### 설계한 아키텍처에서 가장 고민한 부분
 
 **"데이터의 구조가 빈번하게 바뀌더라도 유실 없이, 확장 가능한 파이프라인을 구축할 수 있을까?"** 
 
