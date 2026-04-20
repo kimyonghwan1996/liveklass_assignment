@@ -75,7 +75,7 @@ flowchart TD
 
     subgraph S2 [Data Storage and Processing - Load and Transform]
         B -->|COPY Command / AWS Glue| C[("Amazon RDS for PostgreSQL <br> (or Amazon Redshift)")]:::db
-        C -.->|Staging -> Dim/Fact Transform| C
+        C -.->|Staging -> Transform| C
     end
 
     subgraph S3 [Visualization and Analytics]
